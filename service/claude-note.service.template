@@ -1,0 +1,42 @@
+# Claude Note systemd user service
+#
+# Installation:
+#   1. Copy to ~/.config/systemd/user/claude-note.service
+#   2. Replace {{BIN_PATH}}, {{VAULT_PATH}}, {{HOME}} with actual paths
+#   3. systemctl --user daemon-reload
+#   4. systemctl --user enable claude-note
+#   5. systemctl --user start claude-note
+#
+# Management:
+#   systemctl --user status claude-note
+#   systemctl --user stop claude-note
+#   systemctl --user restart claude-note
+#   journalctl --user -u claude-note -f
+
+[Unit]
+Description=Claude Note Background Worker
+Documentation=https://github.com/YOU/claude-note
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{BIN_PATH}}/claude-note worker
+Restart=always
+RestartSec=10
+
+# Environment
+Environment=PYTHONPATH={{HOME}}/.local/share/claude-note/src
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:{{HOME}}/.local/bin
+
+# Process handling
+KillMode=process
+TimeoutStopSec=30
+
+# Security hardening (optional, uncomment if desired)
+# NoNewPrivileges=yes
+# PrivateTmp=yes
+# ProtectSystem=strict
+# ProtectHome=read-only
+
+[Install]
+WantedBy=default.target
