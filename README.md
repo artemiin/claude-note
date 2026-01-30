@@ -193,7 +193,7 @@ This removes the service, CLI, and source files. Your vault data is preserved.
 
 ## Optional: QMD Integration
 
-If you have [qmd](https://github.com/quadratic-labs/qmd) installed for semantic search, enable it in config:
+If you have [qmd](https://github.com/amir-arad/qmd) installed for semantic search, enable it in config:
 
 ```toml
 [qmd]
@@ -202,6 +202,21 @@ synth_max_notes = 5  # Include top N relevant notes as context
 ```
 
 This improves synthesis quality by providing relevant vault context.
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](docs/getting-started.md) | Step-by-step installation walkthrough |
+| [Configuration](docs/configuration.md) | Complete config reference |
+| [Commands](docs/commands.md) | All CLI commands explained |
+| [Synthesis Modes](docs/synthesis-modes.md) | log vs inbox vs route |
+| [Hook Setup](docs/hook-setup.md) | Claude Code integration |
+| [Service Setup](docs/service-setup.md) | launchd/systemd configuration |
+| [QMD Integration](docs/qmd-integration.md) | Semantic search setup |
+| [Document Ingestion](docs/document-ingestion.md) | Importing papers and docs |
+| [Architecture](docs/architecture.md) | How it works internally |
+| [Troubleshooting](docs/troubleshooting.md) | Common issues and fixes |
 
 ## License
 
