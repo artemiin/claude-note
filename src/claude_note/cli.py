@@ -152,6 +152,30 @@ def cmd_status(args) -> int:
     else:
         print("  (not created yet)")
 
+    # Memory
+    print(f"\nMemory")
+    print(f"  Enabled:   {config.MEMORY_ENABLED}")
+    if config.MEMORY_ENABLED:
+        from . import memory_writer
+        # Try to find a project memory dir from recent sessions
+        memory_shown = False
+        for session_id in list(sessions.keys())[:5]:
+            state = session_tracker.load_session_state(session_id)
+            if state and state.transcript_path:
+                project_dir = memory_writer._resolve_project_dir(state.transcript_path)
+                if project_dir:
+                    memory_path = project_dir / "memory" / "MEMORY.md"
+                    print(f"  Project:   {project_dir.name}")
+                    if memory_path.exists():
+                        line_count = len(memory_path.read_text(encoding="utf-8").splitlines())
+                        print(f"  MEMORY.md: {line_count} lines ({memory_path})")
+                    else:
+                        print(f"  MEMORY.md: (not created yet)")
+                    memory_shown = True
+                    break
+        if not memory_shown:
+            print(f"  (no project dir detected from recent sessions)")
+
     print()
 
     return 0
@@ -198,6 +222,25 @@ def cmd_resynth(args) -> int:
             print(f"  Updated: {', '.join(results['notes_updated'])}")
         if results["errors"]:
             print(f"  Errors: {', '.join(results['errors'])}")
+
+        # Update memory if enabled
+        if config.MEMORY_ENABLED:
+            import logging
+            logger = logging.getLogger("claude-note")
+            state = session_tracker.load_session_state(session_id)
+            if state and state.cwd and state.transcript_path:
+                try:
+                    from . import memory_writer
+                    mem_results = memory_writer.update_memory(
+                        pack, state.cwd, state.transcript_path, logger
+                    )
+                    if mem_results.get("memory_updated"):
+                        print(f"  Memory: +{mem_results['entries_added']}/-{mem_results['entries_removed']} entries")
+                        print(f"    Path: {mem_results['memory_path']}")
+                    elif mem_results.get("skip_reason"):
+                        print(f"  Memory: skipped ({mem_results['skip_reason']})")
+                except Exception as e:
+                    print(f"  Memory: failed ({e})")
 
         return 0
 

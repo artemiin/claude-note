@@ -167,6 +167,18 @@ def run_synthesis(state: models.SessionState, logger: logging.Logger) -> bool:
             for err in results["errors"]:
                 logger.warning(f"Synthesis error: {err}")
 
+        # Update Claude Code auto-memory
+        if config.MEMORY_ENABLED and state.cwd:
+            try:
+                from . import memory_writer
+                mem_results = memory_writer.update_memory(
+                    pack, state.cwd, state.transcript_path, logger
+                )
+                if mem_results.get("memory_updated"):
+                    logger.info(f"Memory: +{mem_results['entries_added']}/-{mem_results['entries_removed']} entries")
+            except Exception as e:
+                logger.warning(f"Memory update failed (non-fatal): {e}")
+
         return True
 
     except Exception as e:

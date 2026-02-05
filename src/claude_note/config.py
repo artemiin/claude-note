@@ -245,6 +245,21 @@ QMD_INGEST_DEDUP_THRESHOLD = float(_get_config_value("ingest_dedup_threshold", s
 INGEST_MERGE_ENABLED = _get_config_value("ingest_merge_enabled", default=True)
 INGEST_MAX_SOURCES_PER_CONCEPT = int(_get_config_value("max_sources_per_concept", default=5))
 
+# =============================================================================
+# Memory Configuration (Claude Code auto-memory integration)
+# =============================================================================
+
+_memory_enabled = _get_config_value("enabled", section="memory", default=True)
+if isinstance(_memory_enabled, str):
+    _memory_enabled = _memory_enabled.lower() == "true"
+
+MEMORY_ENABLED = _memory_enabled
+MEMORY_MODEL = _get_config_value("model", section="memory", default=None)  # None = use SYNTH_MODEL
+MEMORY_TIMEOUT = int(_get_config_value("timeout", section="memory", default=60))
+MEMORY_MAX_LINES = int(_get_config_value("max_lines", section="memory", default=190))
+MEMORY_STALE_DAYS = int(_get_config_value("stale_days", section="memory", default=90))
+MEMORY_DEDUP_THRESHOLD = float(_get_config_value("dedup_threshold", section="memory", default=0.6))
+
 
 # =============================================================================
 # Helper Functions
@@ -266,4 +281,5 @@ def get_config_summary() -> dict:
         "synth_model": SYNTH_MODEL,
         "open_questions_file": str(OPEN_QUESTIONS_FILE),
         "qmd_enabled": QMD_SYNTH_ENABLED,
+        "memory_enabled": MEMORY_ENABLED,
     }
