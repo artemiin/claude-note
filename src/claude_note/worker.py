@@ -21,11 +21,13 @@ from . import open_questions
 from . import synthesizer
 from . import note_router
 from . import vault_indexer
+from . import cleaner
 from . import version_checker
 
 
 # Global flag for graceful shutdown
 _shutdown = False
+_last_session_cleanup = 0.0
 
 
 def setup_logging(verbose: bool = False) -> logging.Logger:
@@ -301,6 +303,20 @@ def run_worker(foreground: bool = False, verbose: bool = False) -> int:
 
             # Clean up old queue files periodically (once per poll)
             queue_manager.cleanup_old_queue_files(keep_days=7)
+
+            # Clean up old session files (throttled: once per hour)
+            global _last_session_cleanup
+            if time.time() - _last_session_cleanup > 3600:
+                try:
+                    result = cleaner.cleanup_old_session_files(dry_run=False)
+                    if result["files_removed"] > 0:
+                        logger.info(
+                            f"Session cleanup: removed {result['files_removed']} files, "
+                            f"freed {result['bytes_freed']:,} bytes"
+                        )
+                except Exception as e:
+                    logger.warning(f"Session cleanup failed: {e}")
+                _last_session_cleanup = time.time()
 
         except Exception as e:
             logger.error(f"Error in poll cycle: {e}")

@@ -222,6 +222,7 @@ SYNTH_TIMEOUT = int(_get_config_value("timeout", section="synthesis", default=12
 # =============================================================================
 
 TIMELINE_MAX_ENTRIES = int(_get_config_value("timeline_max_entries", default=100))
+SESSION_RETENTION_DAYS = int(_get_config_value("session_retention_days", default=3))
 INBOX_DEDUP_ENABLED = _get_config_value("inbox_dedup_enabled", default=True)
 INBOX_DEDUP_THRESHOLD = float(_get_config_value("inbox_dedup_threshold", default=0.7))
 INBOX_DEDUP_LOOKBACK = int(_get_config_value("inbox_dedup_lookback", default=50))

@@ -7,7 +7,7 @@ compress session timelines, and remove orphan state files.
 
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -396,6 +396,55 @@ def consolidate_managed_blocks(note_path: Path, dry_run: bool = True) -> dict:
     return results
 
 
+def cleanup_old_session_files(max_age_days: int = None, dry_run: bool = True) -> dict:
+    """
+    Remove old claude-session-*.md files from the vault root.
+
+    Session files have their knowledge already extracted into inbox/topic notes.
+    Files older than max_age_days are safe to remove.
+
+    Args:
+        max_age_days: Remove files older than this (default: config.SESSION_RETENTION_DAYS)
+        dry_run: If True, only report what would be done
+
+    Returns:
+        Dict with 'files_removed' and 'bytes_freed'
+    """
+    if max_age_days is None:
+        max_age_days = config.SESSION_RETENTION_DAYS
+
+    results = {"files_removed": 0, "bytes_freed": 0}
+
+    vault_root = config.VAULT_ROOT
+    cutoff_date = datetime.utcnow().date() - timedelta(days=max_age_days)
+
+    date_pattern = re.compile(r"^claude-session-(\d{4}-\d{2}-\d{2})-.*\.md$")
+
+    for session_file in vault_root.glob("claude-session-*.md"):
+        match = date_pattern.match(session_file.name)
+        if not match:
+            continue
+
+        try:
+            file_date = datetime.strptime(match.group(1), "%Y-%m-%d").date()
+        except ValueError:
+            continue
+
+        if file_date >= cutoff_date:
+            continue
+
+        try:
+            stat = session_file.stat()
+            results["bytes_freed"] += stat.st_size
+            results["files_removed"] += 1
+            if not dry_run:
+                session_file.unlink()
+        except (OSError, IOError):
+            pass
+
+    return results
+
+
 def find_session_notes(date: str = None) -> list[Path]:
     """
     Find session notes, optionally filtered by date.
@@ -468,6 +517,7 @@ def run_daily_clean(
         "dry_run": dry_run,
         "state": None,
         "sessions": [],
+        "session_files": None,
         "inbox": None,
         "topics": [],
     }
@@ -476,13 +526,15 @@ def run_daily_clean(
     if clean_state:
         results["state"] = clean_state_dir(max_age_days=7, dry_run=dry_run)
 
-    # Compress session timelines
+    # Compress session timelines and prune old session files
     if clean_sessions:
         for note_path in find_session_notes(date):
             session_result = compress_session_timeline(note_path, dry_run=dry_run)
             if session_result:
                 session_result["note"] = note_path.name
                 results["sessions"].append(session_result)
+
+        results["session_files"] = cleanup_old_session_files(dry_run=dry_run)
 
     # Deduplicate inbox
     if clean_inbox:
@@ -524,6 +576,14 @@ def format_clean_results(results: dict) -> str:
         lines.append("")
     else:
         lines.append("Session timelines: (none needed compression)")
+        lines.append("")
+
+    # Session file cleanup
+    if results.get("session_files"):
+        sf = results["session_files"]
+        lines.append("Old session files:")
+        lines.append(f"  Files removed: {sf['files_removed']}")
+        lines.append(f"  Bytes freed: {sf['bytes_freed']:,}")
         lines.append("")
 
     # Inbox dedup
